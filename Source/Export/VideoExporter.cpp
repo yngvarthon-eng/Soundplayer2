@@ -431,6 +431,12 @@ void VideoExporter::run()
     auto plugin = options.pluginFactory != nullptr ? options.pluginFactory() : nullptr;
     SpectrumAnalyzer spectrumAnalyzer;
 
+    // Own Equalizer instance (never the live UI's), fed a snapshot of its
+    // gains -- same cross-thread-safety reasoning as pluginFactory above.
+    Equalizer exportEqualizer;
+    exportEqualizer.setAllGains(options.equalizerGainsDb);
+    exportEqualizer.prepare(sampleRate, samplesPerFrame, 2);
+
     juce::AudioBuffer<float> chunk(2, samplesPerFrame);
     juce::int64 position = 0;
     const juce::int64 numFrames = (totalLength + samplesPerFrame - 1) / samplesPerFrame;
@@ -450,6 +456,7 @@ void VideoExporter::run()
         chunk.clear();
         juce::AudioSourceChannelInfo info(&chunk, 0, n);
         source->getNextAudioBlock(info);
+        exportEqualizer.process(chunk, 2, n);
 
         audioWriter->writeFromAudioSampleBuffer(chunk, 0, n);
 

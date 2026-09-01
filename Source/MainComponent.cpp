@@ -536,6 +536,7 @@ void MainComponent::startVideoExport(VideoExporter::Options options)
     const int pluginIndex = visualization->getActivePluginIndex();
     auto* vizPtr = visualization.get();
     options.pluginFactory = [vizPtr, pluginIndex] { return vizPtr->createPluginInstance(pluginIndex); };
+    options.equalizerGainsDb = audioEngine->getEqualizer().getAllGains();
 
     const auto sourceFile = options.sourceFile;
     videoExporter = std::make_unique<VideoExporter>(std::move(options));

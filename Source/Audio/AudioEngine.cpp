@@ -823,7 +823,7 @@ void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice* device)
     int bufferSize = device->getCurrentBufferSizeSamples();
 
     resamplingSource->prepareToPlay(bufferSize, sampleRate);
-    equalizer.prepare(sampleRate, bufferSize);
+    equalizer.prepare(sampleRate, bufferSize, activeOutputChannels.load());
     pluginChain.prepare(sampleRate, bufferSize);
 }
 

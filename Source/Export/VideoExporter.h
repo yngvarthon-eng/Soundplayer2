@@ -3,9 +3,11 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_core/juce_core.h>
+#include <array>
 #include <atomic>
 #include <functional>
 #include <memory>
+#include "../Effects/Equalizer.h"
 #include "../Visualization/VisualizationPlugin.h"
 
 // Renders a visualization plugin's output over the full length of a track
@@ -68,6 +70,12 @@ public:
         TextLayer topText;
         TextLayer centerText;
         TextLayer bottomText;
+
+        // Snapshot of the live UI's 10-band EQ gains at the moment export was
+        // started, applied to the exported audio track. All-zero (the default)
+        // means no EQ coloration. A snapshot rather than a shared Equalizer
+        // instance, for the same cross-thread-state reason as pluginFactory below.
+        std::array<float, Equalizer::numBands> equalizerGainsDb {};
 
         // Invoked once on the export thread to obtain a fresh plugin instance --
         // never the live UI's instance, so there is no cross-thread state sharing.
