@@ -44,6 +44,11 @@ public:
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
     void filesDropped(const juce::StringArray& files, int x, int y) override;
 
+    // Public so it can be invoked via PlayerControlsComponent's record menu
+    // ("Record video with Soundplayer2's export function"), not just the
+    // (now-removed) standalone toolbar button.
+    void showExportVideoDialog();
+
 private:
     // playlistManager must be declared before audioEngine so it is destroyed AFTER audioEngine
     std::unique_ptr<PlaylistManager>            playlistManager;
@@ -66,7 +71,6 @@ private:
     std::unique_ptr<juce::TextButton>           fullscreenPatternBtn;
     std::unique_ptr<juce::TextButton>           collapseAnalysisBtn;
     std::unique_ptr<juce::TextButton>           collapseFxBtn;
-    std::unique_ptr<juce::TextButton>           exportVideoBtn;
     std::unique_ptr<juce::ComboBox>             sampleRateBox;
     std::unique_ptr<juce::ComboBox>             bitDepthBox;
 
@@ -90,7 +94,6 @@ private:
     double                                      exportProgressValue = 0.0;
     std::unique_ptr<juce::FileChooser>          exportFileChooser;
 
-    void showExportVideoDialog();
     void startVideoExport(VideoExporter::Options options);
     void closeExportProgressWindow();
 

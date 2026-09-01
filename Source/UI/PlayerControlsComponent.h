@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "../Audio/AudioEngine.h"
 #include "../Playlist/PlaylistManager.h"
+#include "../Export/ScreenRecorder.h"
 
 class PlayerControlsComponent : public juce::Component,
                                public juce::ChangeListener,
@@ -18,11 +19,26 @@ public:
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
     void timerCallback() override;
 
+    // Set by MainComponent after construction -- this component has no
+    // MainComponent reference of its own, so "record video via the export
+    // dialog" is routed out through this callback instead.
+    std::function<void()> onRequestVideoExport;
+
 private:
     void updatePlayButton();
     void updateRepeatButton();
     void updateStereoExpansionButton();
     void updateSpeakerTestButtons();
+
+    void showRecordMenu();
+    void beginRawAudioRecording();
+    void beginScreenRecording();
+    void stopActiveRecording();
+    void setRecordingUiActive(bool active);
+
+    enum class ActiveRecording { None, RawAudio, Screen };
+    ActiveRecording activeRecording = ActiveRecording::None;
+    std::unique_ptr<ScreenRecorder> screenRecorder;
 
     bool isDraggingSlider = false;
 

@@ -49,6 +49,7 @@ MainComponent::MainComponent()
     pluginHostManager->initialise();
 
     playerControls = std::make_unique<PlayerControlsComponent>(audioEngine.get(), playlistManager.get());
+    playerControls->onRequestVideoExport = [this] { showExportVideoDialog(); };
     playlistEditor = std::make_unique<PlaylistEditorComponent>(playlistManager.get());
     visualization  = std::make_unique<VisualizationComponent>(audioEngine.get());
     patternViewer  = std::make_unique<ModulePatternViewer>();
@@ -109,9 +110,6 @@ MainComponent::MainComponent()
         resized();
     };
 
-    exportVideoBtn = std::make_unique<juce::TextButton>("Export Video...");
-    exportVideoBtn->onClick = [this] { showExportVideoDialog(); };
-
     sampleRateBox = std::make_unique<juce::ComboBox>();
     sampleRateBox->onChange = [this]
     {
@@ -151,7 +149,6 @@ MainComponent::MainComponent()
     addAndMakeVisible(*fullscreenPatternBtn);
     addAndMakeVisible(*collapseFxBtn);
     addAndMakeVisible(*collapseAnalysisBtn);
-    addAndMakeVisible(*exportVideoBtn);
     addAndMakeVisible(*sampleRateBox);
     addAndMakeVisible(*bitDepthBox);
 
@@ -395,8 +392,6 @@ void MainComponent::resized()
     collapseFxBtn->setBounds(toolbar.removeFromLeft(80));
     toolbar.removeFromLeft(4);
     collapseAnalysisBtn->setBounds(toolbar.removeFromLeft(80));
-    toolbar.removeFromLeft(4);
-    exportVideoBtn->setBounds(toolbar.removeFromLeft(110));
     // Quality selectors right-aligned
     bitDepthBox->setBounds(toolbar.removeFromRight(80));
     toolbar.removeFromRight(5);

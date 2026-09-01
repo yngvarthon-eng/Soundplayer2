@@ -121,6 +121,9 @@ target_sources(SoundPlayer2 PRIVATE
     Source/UI/AudioAnalysisComponent.cpp
     Source/Export/VideoExporter.h
     Source/Export/VideoExporter.cpp
+    Source/Export/FfmpegProcess.h
+    Source/Export/ScreenRecorder.h
+    Source/Export/ScreenRecorder.cpp
     Source/UI/VideoExportSettingsDialog.h
     Source/UI/VideoExportSettingsDialog.cpp
 )
@@ -260,6 +263,9 @@ add_executable(SoundPlayer2Tests
     Source/UI/ModulePatternViewer.cpp
     Source/Export/VideoExporter.h
     Source/Export/VideoExporter.cpp
+    Source/Export/FfmpegProcess.h
+    Source/Export/ScreenRecorder.h
+    Source/Export/ScreenRecorder.cpp
 )
 
 # Link test executable to JUCE libraries

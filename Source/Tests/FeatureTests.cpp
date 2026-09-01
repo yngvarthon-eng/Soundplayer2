@@ -10,6 +10,7 @@
 #include "../Xtp/XtpSequencerSource.h"
 #include "../Xtp/XtpTransportClock.h"
 #include "../Export/VideoExporter.h"
+#include "../Export/ScreenRecorder.h"
 #include "../Visualization/Plugins/WaveformPlugin.h"
 #include <thread>
 #include <chrono>
@@ -915,6 +916,61 @@ void testVideoExporter()
     std::cout << std::endl;
 }
 
+// Real-time capture (unlike VideoExporter's offline render), so this needs a
+// live X server + a pulse-compatible audio source, neither of which is
+// guaranteed in every environment this suite runs in -- skip gracefully
+// rather than failing the whole suite when either is unavailable.
+void testScreenRecorder()
+{
+    std::cout << "=== Testing ScreenRecorder ===" << std::endl;
+
+    if (!VideoExporter::isFfmpegAvailable())
+    {
+        std::cout << "! ffmpeg not found on PATH -- skipping ScreenRecorder test" << std::endl << std::endl;
+        return;
+    }
+
+    juce::File tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory);
+    juce::File outputMp4 = tempDir.getChildFile("sp2_screen_record_test_output.mp4");
+    outputMp4.deleteFile();
+
+    ScreenRecorder recorder;
+    juce::String errorMessage;
+    // Doesn't need to be a real/visible window -- just proves the x11grab +
+    // pulse muxing pipeline works end to end.
+    const bool started = recorder.start(outputMp4, { 0, 0, 160, 120 }, errorMessage);
+
+    if (!started)
+    {
+        std::cout << "! Could not start screen recording (" << errorMessage
+                   << ") -- skipping ScreenRecorder test" << std::endl << std::endl;
+        return;
+    }
+    std::cout << "✓ Started screen recording" << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    recorder.stop();
+
+    const auto deadline = juce::Time::getMillisecondCounter() + 15000;
+    while (recorder.isFinalizing() && juce::Time::getMillisecondCounter() < deadline)
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    if (recorder.isFinalizing() || recorder.isRecording())
+        throw std::runtime_error("ScreenRecorder did not finish within 15s");
+    std::cout << "✓ Stopped and finalized" << std::endl;
+
+    auto err = recorder.getLastError();
+    if (err.isNotEmpty())
+        throw std::runtime_error("ScreenRecorder reported an error: " + err.toStdString());
+
+    if (!outputMp4.existsAsFile() || outputMp4.getSize() <= 0)
+        throw std::runtime_error("Screen recording produced no/empty output file");
+    std::cout << "✓ Output file exists (" << outputMp4.getSize() << " bytes)" << std::endl;
+
+    outputMp4.deleteFile();
+    std::cout << std::endl;
+}
+
 int main()
 {
     std::cout << "\n════════════════════════════════════════" << std::endl;
@@ -937,6 +993,7 @@ int main()
         testXtpSequencerRowJump();
         testXtpSequencerChannelVolume();
         testVideoExporter();
+        testScreenRecorder();
 
         std::cout << "════════════════════════════════════════" << std::endl;
         std::cout << "  ✅ All tests passed!" << std::endl;

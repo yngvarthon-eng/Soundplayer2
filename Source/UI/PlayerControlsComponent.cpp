@@ -24,6 +24,8 @@ namespace
 PlayerControlsComponent::PlayerControlsComponent(AudioEngine* engine, PlaylistManager* playlist)
     : audioEngine(engine), playlistManager(playlist)
 {
+    screenRecorder = std::make_unique<ScreenRecorder>();
+
     // Play/Pause
     playPauseButton = std::make_unique<juce::TextButton>("Play");
     playPauseButton->onClick = [this]
@@ -157,35 +159,10 @@ PlayerControlsComponent::PlayerControlsComponent(AudioEngine* engine, PlaylistMa
     recordButton->setClickingTogglesState(false);
     recordButton->onClick = [this]
     {
-        if (audioEngine->isRecording())
-        {
-            audioEngine->stopRecording();
-            recordButton->setButtonText("Record");
-            recordButton->setColour(juce::TextButton::buttonColourId, juce::Colour(0xff8b0000));
-            recordTimeLabel->setVisible(false);
-        }
+        if (activeRecording != ActiveRecording::None)
+            stopActiveRecording();
         else
-        {
-            recordFileChooser = std::make_unique<juce::FileChooser>(
-                "Save recording as...",
-                juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
-                    .getChildFile("recording.wav"),
-                "*.wav");
-            recordFileChooser->launchAsync(
-                juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting,
-                [this](const juce::FileChooser& fc)
-                {
-                    auto file = fc.getResult();
-                    if (file != juce::File{})
-                    {
-                        audioEngine->startRecording(file);
-                        recordButton->setButtonText("Stop Rec");
-                        recordButton->setColour(juce::TextButton::buttonColourId, juce::Colours::red);
-                        recordTimeLabel->setText("REC 0:00", juce::dontSendNotification);
-                        recordTimeLabel->setVisible(true);
-                    }
-                });
-        }
+            showRecordMenu();
     };
     addAndMakeVisible(*recordButton);
 
@@ -205,6 +182,114 @@ PlayerControlsComponent::~PlayerControlsComponent()
 {
     stopTimer();
     playlistManager->removeChangeListener(this);
+}
+
+void PlayerControlsComponent::setRecordingUiActive(bool active)
+{
+    recordButton->setButtonText(active ? "Stop Rec" : "Record");
+    recordButton->setColour(juce::TextButton::buttonColourId,
+                             active ? juce::Colours::red : juce::Colour(0xff8b0000));
+    recordButton->setEnabled(true);
+
+    if (active)
+    {
+        recordTimeLabel->setText("REC 0:00", juce::dontSendNotification);
+        recordTimeLabel->setVisible(true);
+    }
+    else
+    {
+        recordTimeLabel->setVisible(false);
+    }
+}
+
+void PlayerControlsComponent::showRecordMenu()
+{
+    juce::PopupMenu menu;
+    menu.addItem(1, "Record raw audio");
+    menu.addItem(2, "Record screen to video");
+    menu.addItem(3, "Record video with Soundplayer2's export function");
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(recordButton.get()),
+        [this](int result)
+        {
+            if (result == 1)
+                beginRawAudioRecording();
+            else if (result == 2)
+                beginScreenRecording();
+            else if (result == 3 && onRequestVideoExport)
+                onRequestVideoExport();
+        });
+}
+
+void PlayerControlsComponent::beginRawAudioRecording()
+{
+    recordFileChooser = std::make_unique<juce::FileChooser>(
+        "Save recording as...",
+        juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
+            .getChildFile("recording.wav"),
+        "*.wav");
+    recordFileChooser->launchAsync(
+        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this](const juce::FileChooser& fc)
+        {
+            auto file = fc.getResult();
+            if (file == juce::File{})
+                return;
+
+            audioEngine->startRecording(file);
+            activeRecording = ActiveRecording::RawAudio;
+            setRecordingUiActive(true);
+        });
+}
+
+void PlayerControlsComponent::beginScreenRecording()
+{
+    recordFileChooser = std::make_unique<juce::FileChooser>(
+        "Save screen recording as...",
+        juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
+            .getChildFile("screen_recording.mp4"),
+        "*.mp4");
+    recordFileChooser->launchAsync(
+        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this](const juce::FileChooser& fc)
+        {
+            auto file = fc.getResult();
+            if (file == juce::File{})
+                return;
+
+            // Sampled once, here -- doesn't track the window if it's later moved/resized.
+            auto bounds = getTopLevelComponent()->getScreenBounds();
+
+            juce::String errorMessage;
+            if (screenRecorder->start(file, bounds, errorMessage))
+            {
+                activeRecording = ActiveRecording::Screen;
+                setRecordingUiActive(true);
+            }
+            else
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                                        "Screen Recording", errorMessage);
+            }
+        });
+}
+
+void PlayerControlsComponent::stopActiveRecording()
+{
+    if (activeRecording == ActiveRecording::RawAudio)
+    {
+        audioEngine->stopRecording();
+        activeRecording = ActiveRecording::None;
+        setRecordingUiActive(false);
+    }
+    else if (activeRecording == ActiveRecording::Screen)
+    {
+        screenRecorder->stop();
+        // Stays ActiveRecording::Screen until timerCallback observes the
+        // background finalize thread has finished -- ffmpeg needs a moment
+        // to flush the mp4 container after the stop signal.
+        recordButton->setButtonText("Finishing...");
+        recordButton->setEnabled(false);
+    }
 }
 
 void PlayerControlsComponent::paint(juce::Graphics& g)
@@ -306,14 +391,35 @@ void PlayerControlsComponent::timerCallback()
         juce::dontSendNotification);
 
     // Update recording time label
-    if (audioEngine->isRecording())
+    auto showRecDuration = [this](double recSecs)
     {
-        double recSecs = audioEngine->getRecordingDuration();
         int rs = (int)recSecs;
         recordTimeLabel->setText(
             "REC " + juce::String(rs / 60) + ":" + juce::String::formatted("%02d", rs % 60),
             juce::dontSendNotification);
         recordTimeLabel->setVisible(true);
+    };
+
+    if (activeRecording == ActiveRecording::RawAudio && audioEngine->isRecording())
+    {
+        showRecDuration(audioEngine->getRecordingDuration());
+    }
+    else if (activeRecording == ActiveRecording::Screen)
+    {
+        if (screenRecorder->isRecording() || screenRecorder->isFinalizing())
+            showRecDuration(screenRecorder->getRecordingDuration());
+
+        if (!screenRecorder->isRecording() && !screenRecorder->isFinalizing())
+        {
+            // Background finalize thread has finished -- the mp4 is ready.
+            activeRecording = ActiveRecording::None;
+            setRecordingUiActive(false);
+
+            auto err = screenRecorder->getLastError();
+            if (err.isNotEmpty())
+                juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                                        "Screen Recording", err);
+        }
     }
 
     // Update status line
