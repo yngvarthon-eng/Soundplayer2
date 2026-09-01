@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <!-- Tracker/module formats that shared-mime-info often does not define.
+       Registering them lets the .desktop MimeType associations resolve. -->
+  <mime-type type="audio/x-soundplayer2-module">
+    <comment>Tracker module audio (SoundPlayer2)</comment>
+    <glob pattern="*.mod"/>
+    <glob pattern="*.xm"/>
+    <glob pattern="*.it"/>
+    <glob pattern="*.s3m"/>
+    <glob pattern="*.mptm"/>
+    <glob pattern="*.umx"/>
+    <glob pattern="*.ahx"/>
+    <glob pattern="*.ams"/>
+    <glob pattern="*.amf"/>
+    <glob pattern="*.med"/>
+    <glob pattern="*.mo3"/>
+    <glob pattern="*.mtm"/>
+    <glob pattern="*.okt"/>
+    <glob pattern="*.oct"/>
+    <glob pattern="*.stm"/>
+    <glob pattern="*.669"/>
+    <glob pattern="*.umf"/>
+    <glob pattern="*.drm"/>
+    <glob pattern="*.digi"/>
+    <glob pattern="*.far"/>
+    <glob pattern="*.mdl"/>
+    <glob pattern="*.mt2"/>
+    <glob pattern="*.dcm"/>
+    <glob pattern="*.dlm"/>
+    <glob pattern="*.ptm"/>
+    <glob pattern="*.pcm"/>
+    <glob pattern="*.dbm"/>
+    <glob pattern="*.dsm"/>
+    <glob pattern="*.cdm"/>
+    <glob pattern="*.hvl"/>
+    <glob pattern="*.c67"/>
+    <glob pattern="*.sfx"/>
+    <glob pattern="*.imf"/>
+    <glob pattern="*.u2b"/>
+    <glob pattern="*.psm"/>
+    <glob pattern="*.stp"/>
+    <glob pattern="*.symmod"/>
+  </mime-type>
+
+  <mime-type type="audio/x-mod">
+    <comment>Amiga SoundTracker module</comment>
+    <glob pattern="*.mod"/>
+  </mime-type>
+  <mime-type type="audio/x-xm">
+    <comment>FastTracker II module</comment>
+    <glob pattern="*.xm"/>
+  </mime-type>
+  <mime-type type="audio/x-it">
+    <comment>Impulse Tracker module</comment>
+    <glob pattern="*.it"/>
+  </mime-type>
+  <mime-type type="audio/x-s3m">
+    <comment>ScreamTracker 3 module</comment>
+    <glob pattern="*.s3m"/>
+  </mime-type>
+
+  <mime-type type="audio/x-extracker-xtp">
+    <comment>exTracker song</comment>
+    <glob pattern="*.xtp"/>
+    <glob pattern="*.xtd"/>
+  </mime-type>
+</mime-info>

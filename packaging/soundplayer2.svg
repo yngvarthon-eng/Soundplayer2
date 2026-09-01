@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a7bd5"/>
+      <stop offset="1" stop-color="#1e2a52"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="url(#bg)"/>
+  <!-- play triangle -->
+  <path d="M104 86 L104 170 L172 128 Z" fill="#ffffff"/>
+  <!-- sound waves -->
+  <g fill="none" stroke="#9ad0ff" stroke-width="10" stroke-linecap="round" opacity="0.85">
+    <path d="M188 104 a30 30 0 0 1 0 48"/>
+    <path d="M206 88 a54 54 0 0 1 0 80"/>
+  </g>
+</svg>
